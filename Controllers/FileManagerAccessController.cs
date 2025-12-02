@@ -1,30 +1,37 @@
-﻿using Syncfusion.EJ2.FileManager.PhysicalFileProvider;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text.Json;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
 using Syncfusion.EJ2.FileManager.Base;
-using System.IO;
-using System.Text.Json;
+using Syncfusion.EJ2.FileManager.PhysicalFileProvider;
 
-namespace EJ2APIServices.Controllers
+namespace EJ2ASPCoreFileProvider.Controllers
 {
 
     [Route("api/[controller]")]
-    [EnableCors("AllowAllOrigins")]
+    // [EnableCors("AllowAllOrigins")]
     public class FileManagerAccessController : Controller
     {
         public PhysicalFileProvider operation;
         public string basePath;
-        string root = "wwwroot\\Files";
-        public FileManagerAccessController(IWebHostEnvironment hostingEnvironment)
+        string root = "wwwroot/Files";
+        private readonly ILogger<FileManagerAccessController> _logger;
+        public FileManagerAccessController(
+            IWebHostEnvironment hostingEnvironment, 
+            IHttpContextAccessor httpContextAccessor,
+            ILogger<FileManagerAccessController> logger)
         {
+            var rootPath = httpContextAccessor.HttpContext?.Request.Headers["Folder"].ToString();
             this.basePath = hostingEnvironment.ContentRootPath;
             this.operation = new PhysicalFileProvider();
-            this.operation.RootFolder(this.basePath + "\\" + this.root);
+            this.operation.RootFolder(basePath + "/" + root + "/" + rootPath);
+            this._logger = logger;
         }
         [Route("FileOperations")]
         public object FileOperations([FromBody] FileManagerDirectoryContent args)
@@ -39,6 +46,7 @@ namespace EJ2APIServices.Controllers
                     return this.operation.ToCamelCase(response);
                 }
             }
+            _logger.LogInformation("File Operations: {}", args.Action);
             switch (args.Action)
             {
                 case "read":

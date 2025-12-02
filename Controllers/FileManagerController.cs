@@ -1,16 +1,16 @@
-﻿using Syncfusion.EJ2.FileManager.PhysicalFileProvider;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text.Json;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
 using Syncfusion.EJ2.FileManager.Base;
-using System.IO;
-using System.Text.Json;
+using Syncfusion.EJ2.FileManager.PhysicalFileProvider;
 
-namespace EJ2APIServices.Controllers
+namespace EJ2ASPCoreFileProvider.Controllers
 {
 
     [Route("api/[controller]")]
@@ -19,13 +19,44 @@ namespace EJ2APIServices.Controllers
     {
         public PhysicalFileProvider operation;
         public string basePath;
-        string root = "wwwroot\\Files";
-        public FileManagerController(IWebHostEnvironment hostingEnvironment)
+        string root = "wwwroot/Files";
+    
+        public FileManagerController(
+            IWebHostEnvironment hostingEnvironment,
+            IHttpContextAccessor httpContextAccessor)
         {
+            var path = httpContextAccessor.HttpContext?.Request.Path.Value;
+            var folderHeader = httpContextAccessor.HttpContext?.Request.Headers["Folder"].ToString();
+            var isAdmin = httpContextAccessor.HttpContext?.Request.Headers["IsAdmin"].ToString() == true.ToString();
+            
             this.basePath = hostingEnvironment.ContentRootPath;
             this.operation = new PhysicalFileProvider();
-            this.operation.RootFolder(this.basePath + "\\" + this.root);
+        
+            string fullRootPath;
+            if (isAdmin)
+            {
+                fullRootPath = Path.Combine(this.basePath, this.root);
+            }
+            else
+            {
+                if (string.IsNullOrEmpty(folderHeader) && !path.Contains("GetImage") && !path.Contains("Download"))
+                {
+                    throw new ArgumentException("Non-admin user must have a folder specified");
+                }
+                fullRootPath = Path.Combine(this.basePath, this.root, folderHeader);
+            }
+        
+            Console.WriteLine($"Final Root Path: {fullRootPath}");
+        
+            if (!isAdmin && !Directory.Exists(fullRootPath))
+            {
+                Directory.CreateDirectory(fullRootPath);
+                Console.WriteLine($"Created directory: {fullRootPath}");
+            }
+        
+            this.operation.RootFolder(fullRootPath);
         }
+        
         [Route("FileOperations")]
         public object FileOperations([FromBody] FileManagerDirectoryContent args)
         {
@@ -131,6 +162,8 @@ namespace EJ2APIServices.Controllers
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             };
             FileManagerDirectoryContent args = JsonSerializer.Deserialize<FileManagerDirectoryContent>(downloadInput, options);
+            Console.BackgroundColor = ConsoleColor.Red;
+            Console.WriteLine($"Path: {args.Path}, Names: {args.Names}, Data: {args.Data}");
             return operation.Download(args.Path, args.Names, args.Data);
         }
 
