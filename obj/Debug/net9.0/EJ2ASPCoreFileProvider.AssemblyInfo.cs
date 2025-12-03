@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("EJ2ASPCoreFileProvider")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f790e7201126ab84eeb6a489f09a119e3661a6c8")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8f6e872d4164bd8ae160a83132b70c53502c5080")]
 [assembly: System.Reflection.AssemblyProductAttribute("EJ2ASPCoreFileProvider")]
 [assembly: System.Reflection.AssemblyTitleAttribute("EJ2ASPCoreFileProvider")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

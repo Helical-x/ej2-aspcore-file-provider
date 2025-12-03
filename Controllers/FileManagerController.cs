@@ -20,6 +20,7 @@ namespace EJ2ASPCoreFileProvider.Controllers
         public PhysicalFileProvider operation;
         public string basePath;
         string root = "wwwroot/Files";
+        private bool isAdmin;
     
         public FileManagerController(
             IWebHostEnvironment hostingEnvironment,
@@ -27,8 +28,8 @@ namespace EJ2ASPCoreFileProvider.Controllers
         {
             var path = httpContextAccessor.HttpContext?.Request.Path.Value;
             var folderHeader = httpContextAccessor.HttpContext?.Request.Headers["Folder"].ToString();
-            var isAdmin = httpContextAccessor.HttpContext?.Request.Headers["IsAdmin"].ToString() == true.ToString();
-            
+            isAdmin = httpContextAccessor.HttpContext?.Request.Headers["IsAdmin"].ToString() == true.ToString();
+            Console.WriteLine($"IsAdmin: {isAdmin}, FolderHeader: {folderHeader}, Path: {path}");
             this.basePath = hostingEnvironment.ContentRootPath;
             this.operation = new PhysicalFileProvider();
         
@@ -69,6 +70,13 @@ namespace EJ2ASPCoreFileProvider.Controllers
                     return this.operation.ToCamelCase(response);
                 }
             }
+
+            if (!isAdmin && args.Action is "delete" or "copy" or "move" or "rename" or "create")
+            {
+                FileManagerResponse response = new FileManagerResponse();
+                response.Error = new ErrorDetails { Code = "401", Message = "Restricted to modify the root folder." };
+                return this.operation.ToCamelCase(response);
+            }
             switch (args.Action)
             {
                 case "read":
@@ -107,6 +115,10 @@ namespace EJ2ASPCoreFileProvider.Controllers
         {
             try
             {
+                if (!isAdmin && action is "save")
+                {
+                    throw new UnauthorizedAccessException("Access denied for Directory-traversal");
+                }
                 FileManagerResponse uploadResponse;
                 foreach (var file in uploadFiles)
                 {
